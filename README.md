@@ -19,5 +19,5 @@ Este proyecto es una API REST para gestionar estudiantes.
 ## Docker
 ```bash
 mvnw.cmd clean package
-docker build -t imagen-estudiante-jdk17 .
-docker run -p 8091:8090 --name container-estudiante imagen-estudiante-jdk17
+docker build -t imagen-estudiante-jdk11 .
+docker run -p 8091:8090 --name container-estudiante imagen-estudiante-jdk11

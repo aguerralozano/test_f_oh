@@ -5,7 +5,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.SequenceGenerator;
 import lombok.Data;
 //import java.math.BigDecimal;
 
@@ -18,16 +17,8 @@ import lombok.Data;
 @Data
 public class Estudiante {
 
-    /*
     @Id
-    @Column(precision = 38, scale = 0)
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
-    private BigDecimal id;
-    */
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "estudiante_seq_gen")
-    @SequenceGenerator(name = "estudiante_seq_gen", sequenceName = "TEST_GH.ESTUDIANTE_SEQ", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     @Column(nullable = false, length = 40)
