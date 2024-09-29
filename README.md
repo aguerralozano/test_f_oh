@@ -9,7 +9,7 @@ Este proyecto es una API REST para gestionar estudiantes.
 - Spring Data JPA
 - Hibernate
 - Swagger
-- MySQL
+- H2
 
 ## Instalación
 1. Clona el repositorio:
