@@ -4,8 +4,15 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+/**
+ * Clase para exponer datos del Estudiante
+ * 
+ * @author Angel Guerra
+ */
 @Data
 public class EstudianteDto {
+
+    private Integer id;
 
     @Size(max = 40, message = "El nombre no puede tener más de 40 caracteres")
     @NotNull(message = "El campo nombre no puede ser nula")

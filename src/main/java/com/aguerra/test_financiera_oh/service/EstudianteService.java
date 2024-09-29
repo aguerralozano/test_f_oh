@@ -2,13 +2,16 @@ package com.aguerra.test_financiera_oh.service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import com.aguerra.test_financiera_oh.dto.EstudianteDto;
-import com.aguerra.test_financiera_oh.dto.RespuestaDto;
+import com.aguerra.test_financiera_oh.exception.ConflictException;
+import com.aguerra.test_financiera_oh.exception.NoContentException;
+import com.aguerra.test_financiera_oh.exception.NotFoundException;
+import com.aguerra.test_financiera_oh.mapper.EstudianteMapper;
 import com.aguerra.test_financiera_oh.model.Estudiante;
 import com.aguerra.test_financiera_oh.repository.EstudianteRepository;
 
@@ -23,79 +26,83 @@ public class EstudianteService {
     @Autowired
     EstudianteRepository estudianteRepo;
 
-    public List<Estudiante> obtenerEstudiantes() {
-        List<Estudiante> estudiantes = null;
+    public List<EstudianteDto> obtenerEstudiantes() {
 
-        estudiantes = estudianteRepo.findAll();
+        List<Estudiante> estudiantes = estudianteRepo.findAll();
 
-        return estudiantes;
+        if (estudiantes == null || estudiantes.isEmpty()) {
+            throw new NoContentException("No se encontraron estudiantes.");
+        }
+
+        // Usamos stream() y map() para convertir de Estudiante a EstudianteDto
+        List<EstudianteDto> estudiantesDto = estudiantes.stream()
+                .map(estudiante -> EstudianteMapper.toDTO(estudiante))
+                .collect(Collectors.toList());
+
+        return estudiantesDto;
     }
 
-    public RespuestaDto insertarEstudiante(EstudianteDto estudianteDto) {
-        RespuestaDto respuestaDto = new RespuestaDto();
-        Estudiante newEstudiante = new Estudiante();
+    public EstudianteDto obtenerEstudiantePorId(Integer id) {
 
-        this.MapEstudianteDtoToEstudiante(estudianteDto, newEstudiante);
+        Estudiante estudiante = estudianteRepo.findById(id)
+            .orElseThrow(() -> new NotFoundException("Estudiante no encontrado con ID: " + id));
 
-        List<Estudiante> estudiantesResult = estudianteRepo.findByEmail(newEstudiante.getEmail());
-        if(estudiantesResult.size() > 0){
-            respuestaDto.setStatus(HttpStatus.CONFLICT);
-            respuestaDto.setMensaje("Ya existe un estudiante registrado con ese email");
-            return respuestaDto;
-        }
+        return EstudianteMapper.toDTO(estudiante);
+    }
+
+    public EstudianteDto insertarEstudiante(EstudianteDto estudianteDto) {
+
+        Estudiante newEstudiante = EstudianteMapper.toEntity(estudianteDto);
+
+        this.validarEmail(newEstudiante);
 
         newEstudiante = estudianteRepo.save(newEstudiante);
-        respuestaDto.setEstudianteDto(estudianteDto);
+        estudianteDto.setId(newEstudiante.getId());
 
-        return respuestaDto;
+        return estudianteDto;
     }
 
-    public RespuestaDto actualizarEstudiante(Integer idEstudiante, EstudianteDto estudianteDto){
-        RespuestaDto respuestaDto = new RespuestaDto();
+    public EstudianteDto actualizarEstudiante(Integer idEstudiante, EstudianteDto estudianteDto) {
 
         Optional<Estudiante> estudianteOptional = estudianteRepo.findById(idEstudiante);
-        if(!estudianteOptional.isPresent()){
-            respuestaDto.setStatus(HttpStatus.NOT_FOUND);
-            respuestaDto.setMensaje("Estudiante no existe");
-            return respuestaDto;
+        if (!estudianteOptional.isPresent()) {
+            throw new NotFoundException("Estudiante no existe");
         }
 
-        Estudiante updEstudiante = estudianteOptional.get();
-        this.MapEstudianteDtoToEstudiante(estudianteDto, updEstudiante);
+        Estudiante updEstudiante = EstudianteMapper.toEntity(estudianteDto);
+        updEstudiante.setId(estudianteOptional.get().getId());
 
-        List<Estudiante> estudiantesResult = estudianteRepo.findByEmail(updEstudiante.getEmail());
-        if(estudiantesResult.size() > 0){
-            respuestaDto.setStatus(HttpStatus.CONFLICT);
-            respuestaDto.setMensaje("Ya existe un estudiante registrado con ese email");
-            return respuestaDto;
-        }
+        this.validarEmail(updEstudiante);
 
         updEstudiante = estudianteRepo.save(updEstudiante);
-        respuestaDto.setEstudianteDto(estudianteDto);
+        estudianteDto.setId(idEstudiante);
 
-        return respuestaDto;
+        return estudianteDto;
     }
 
-    public RespuestaDto eliminarEstudiante(Integer idEstudiante){
-        RespuestaDto respuestaDto = new RespuestaDto();
+    public void eliminarEstudiante(Integer idEstudiante) {
         Optional<Estudiante> estudiante = estudianteRepo.findById(idEstudiante);
-        if(!estudiante.isPresent()){
-            respuestaDto.setStatus(HttpStatus.NOT_FOUND);
-            respuestaDto.setMensaje("Estudiante no existe");
-            return respuestaDto;
+        if (!estudiante.isPresent()) {
+            throw new NotFoundException("Estudiante no existe");
         }
 
         estudianteRepo.delete(estudiante.get());
-        return respuestaDto;
     }
 
-    private void MapEstudianteDtoToEstudiante(EstudianteDto estudianteDto, Estudiante estudiante){
-        estudiante.setNombre(estudianteDto.getNombre());
-        estudiante.setApellido(estudianteDto.getApellido());
-        estudiante.setEmail(estudianteDto.getEmail());
-        estudiante.setCreditos(estudianteDto.getCreditos());
-        estudiante.setSemestre(estudianteDto.getSemestre());
-        estudiante.setPromedio(estudianteDto.getPromedio());
-    }
+    private void validarEmail(Estudiante estudiante) {
+        String msjError = "Ya existe un estudiante registrado con ese email";
+        if(estudiante.getId() == null) {
+            //validación para estudiantes nuevos
+            List<Estudiante> estudiantesResult = estudianteRepo.findByEmail(estudiante.getEmail());
+            if (estudiantesResult.size() > 0) {
+                throw new ConflictException(msjError);
+            }
+        } else {
+            //validación para actualizar datos de estudiante
+            if(estudianteRepo.existsByEmailAndNotId(estudiante.getEmail(), estudiante.getId())){
+                throw new ConflictException(msjError);
+            }
+        }
 
+    }
 }

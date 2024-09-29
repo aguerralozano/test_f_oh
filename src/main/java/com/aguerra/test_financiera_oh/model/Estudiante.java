@@ -9,8 +9,10 @@ import jakarta.persistence.SequenceGenerator;
 import lombok.Data;
 //import java.math.BigDecimal;
 
-/*
+/**
  * Esta clase representa una tabla en la base de datos
+ * 
+ * @author Angel Guerra
  */
 @Entity
 @Data

@@ -1,8 +1,9 @@
 package com.aguerra.test_financiera_oh.controller;
 
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,13 +17,17 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
 import com.aguerra.test_financiera_oh.dto.EstudianteDto;
-import com.aguerra.test_financiera_oh.dto.RespuestaDto;
-import com.aguerra.test_financiera_oh.model.Estudiante;
+import com.aguerra.test_financiera_oh.exception.BadRequestException;
 import com.aguerra.test_financiera_oh.service.EstudianteService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import jakarta.validation.Valid;
 
 /**
@@ -32,7 +37,7 @@ import jakarta.validation.Valid;
  */
 
 @RestController
-//@Tag(name = "Estudiante", description = "Estudiante API")
+@Tag(name = "Estudiante", description = "Estudiante API")
 @RequestMapping("/api/v1/estudiante")
 public class EstudianteController {
 
@@ -42,86 +47,67 @@ public class EstudianteController {
 	EstudianteService estudianteService;
 
     @GetMapping()
-    public ResponseEntity<List<Estudiante>> obtenerEstudiantes() {
+    @Operation(summary = "Obtener todos los estudiantes", description = "Devuelve una lista de todos los estudiantes")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", 
+        description = "Lista de estudiantes",
+        content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = EstudianteDto.class)))),
+        @ApiResponse(responseCode = "204", description = "No se encontraron estudiantes")
+    })
+    public ResponseEntity<List<EstudianteDto>> obtenerEstudiantes() {
     	
-        List<Estudiante> estudiantes = null;
+        List<EstudianteDto> estudiantes = null;
 
-        try{
-           estudiantes = estudianteService.obtenerEstudiantes();
-           logger.info("estudiantes: " + estudiantes);
-        }
-        catch (Exception ex) {
-            logger.error("Error al invocar estudianteService.obtenerEstudiantes() -> ", ex);
-            return ResponseEntity.internalServerError().build();
-        }
+        estudiantes = estudianteService.obtenerEstudiantes();
+        logger.info("estudiantes: " + estudiantes);
     	
         return ResponseEntity.ok(estudiantes);
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<EstudianteDto> obtenerEstudiantes(@PathVariable Integer id) {
+    	
+        EstudianteDto estudiante = null;
+
+        estudiante = estudianteService.obtenerEstudiantePorId(id);
+        logger.info("estudiantes: " + estudiante);
+    	
+        return ResponseEntity.ok(estudiante);
+    }
+
     @PostMapping()
-    public ResponseEntity<String> crearEstudiante(@Valid @RequestBody EstudianteDto estudianteDto, BindingResult result) {
-        RespuestaDto respuestaDto = null;
+    public ResponseEntity<EstudianteDto> crearEstudiante(@Valid @RequestBody EstudianteDto estudianteDto, BindingResult result) {
+        EstudianteDto newEstudiante = null;
 
         if (result.hasErrors()) {
-            return ResponseEntity.badRequest().body(result.getFieldError().getDefaultMessage());
+            throw new BadRequestException(result.getFieldError().getDefaultMessage());
         }
 
-        try{
-            logger.info("estudianteDto: " + estudianteDto);
-            respuestaDto = estudianteService.insertarEstudiante(estudianteDto);
-            logger.info("respuestaDto: " + respuestaDto);
-            if(!respuestaDto.getResultado()){
-                return ResponseEntity.status(respuestaDto.getStatus()).body(respuestaDto.getMensaje());
-            }
+        newEstudiante = estudianteService.insertarEstudiante(estudianteDto);
+        logger.info("newEstudiante: " + newEstudiante);
 
-         }
-         catch (Exception ex) {
-             logger.error("Error al invocar estudianteService.insertarEstudiante() -> ", ex);
-             return ResponseEntity.internalServerError().build();
-         }
-
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+        return ResponseEntity.status(HttpStatus.CREATED).body(newEstudiante);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<String> actualizarEstudiante(@PathVariable Integer id, @Valid @RequestBody EstudianteDto estudianteDto, BindingResult result) {
-        RespuestaDto respuestaDto = null;
+    public ResponseEntity<EstudianteDto> actualizarEstudiante(@PathVariable Integer id, @Valid @RequestBody EstudianteDto estudianteDto, BindingResult result) {
+        EstudianteDto updEstudiante = null;
 
         if (result.hasErrors()) {
-            return ResponseEntity.badRequest().body(result.getFieldError().getDefaultMessage());
+            throw new BadRequestException(result.getFieldError().getDefaultMessage());
         }
 
-        try{
-            logger.info("estudianteDto: " + estudianteDto);
-            respuestaDto = estudianteService.actualizarEstudiante(id, estudianteDto);
-            logger.info("respuestaDto: " + respuestaDto);
-            if(!respuestaDto.getResultado()){
-                return ResponseEntity.status(respuestaDto.getStatus()).body(respuestaDto.getMensaje());
-            }
+        updEstudiante = estudianteService.actualizarEstudiante(id, estudianteDto);
+        logger.info("updEstudiante: " + updEstudiante);
 
-         }
-         catch (Exception ex) {
-             logger.error("Error al invocar estudianteService.actualizarEstudiante() -> ", ex);
-             return ResponseEntity.internalServerError().build();
-         }
-
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok().body(updEstudiante);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarEstudiante(@PathVariable Integer id) {
-        try{
-            logger.info("idEstudiante:" + id);
-            RespuestaDto respuestaDto = estudianteService.eliminarEstudiante(id);
 
-            if(!respuestaDto.getResultado()){
-                return ResponseEntity.status(respuestaDto.getStatus()).build();
-            }
-        }
-        catch (Exception ex) {
-            logger.error("Error al invocar estudianteService.eliminarEstudiante() -> ", ex);
-            return ResponseEntity.internalServerError().build();
-        }
+        logger.info("delete idEstudiante:" + id);
+        estudianteService.eliminarEstudiante(id);
         
         return ResponseEntity.noContent().build();  // 204 No Content
     }
