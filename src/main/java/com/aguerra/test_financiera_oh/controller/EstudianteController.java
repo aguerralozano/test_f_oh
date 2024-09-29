@@ -28,7 +28,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
-import jakarta.validation.Valid;
+import javax.validation.Valid;
 
 /**
  * Clase que implementa el controladores REST Estudiante
