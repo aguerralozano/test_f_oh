@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.aguerra.test_financiera_oh.dto.EstudianteDto;
 import com.aguerra.test_financiera_oh.exception.ConflictException;
@@ -26,6 +27,7 @@ public class EstudianteService {
     @Autowired
     EstudianteRepository estudianteRepo;
 
+    @Transactional(readOnly = true)
     public List<EstudianteDto> obtenerEstudiantes() {
 
         List<Estudiante> estudiantes = estudianteRepo.findAll();
@@ -42,6 +44,7 @@ public class EstudianteService {
         return estudiantesDto;
     }
 
+    @Transactional(readOnly = true)
     public EstudianteDto obtenerEstudiantePorId(Integer id) {
 
         Estudiante estudiante = estudianteRepo.findById(id)
@@ -50,6 +53,7 @@ public class EstudianteService {
         return EstudianteMapper.toDTO(estudiante);
     }
 
+    @Transactional()
     public EstudianteDto insertarEstudiante(EstudianteDto estudianteDto) {
 
         Estudiante newEstudiante = EstudianteMapper.toEntity(estudianteDto);
@@ -62,6 +66,7 @@ public class EstudianteService {
         return estudianteDto;
     }
 
+    @Transactional()
     public EstudianteDto actualizarEstudiante(Integer idEstudiante, EstudianteDto estudianteDto) {
 
         Optional<Estudiante> estudianteOptional = estudianteRepo.findById(idEstudiante);
@@ -80,6 +85,7 @@ public class EstudianteService {
         return estudianteDto;
     }
 
+    @Transactional()
     public void eliminarEstudiante(Integer idEstudiante) {
         Optional<Estudiante> estudiante = estudianteRepo.findById(idEstudiante);
         if (!estudiante.isPresent()) {
